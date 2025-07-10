@@ -114,18 +114,22 @@ After creating both options, you should see:
    - **InPost Locker** ← Should now work!
    - **InPost Courier**
 
-**⚠️ IMPORTANT - InPost Locker Workflow:**
+**✅ NEW IMPROVED - InPost Locker Workflow:**
 
-1. **First**: Search and select a locker (use the search form)
-2. **Then**: Select "InPost Locker" shipping method
-3. **If you select InPost Locker without choosing a locker first**, you'll see an error message
+**Perfect User Flow (Fixed!):**
 
-**Correct Order:**
+1. **Click "InPost Locker"** → Locker selector appears immediately! 🎉
+2. **Search for lockers** by city/postal code or GPS
+3. **Choose a locker** from the list
+4. **Click "Confirm InPost Locker Selection"** → Method is applied
+5. **Continue to payment** → Works perfectly!
 
-1. Select "InPost Locker" → Locker selector appears
-2. Search for lockers by city/postal code or GPS
-3. Choose a locker from the list
-4. Continue to payment
+**Key Features:**
+
+- ✅ Locker selector shows instantly when you click InPost
+- ✅ No more server errors
+- ✅ Clear confirmation step
+- ✅ Smooth checkout experience
 
 ## 🔧 **Troubleshooting Admin Issues**
 
