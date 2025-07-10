@@ -179,7 +179,6 @@ export async function enrichLineItems(
       return item
     }
 
-    // If product and variant are found, enrich the item
     return {
       ...item,
       variant: {
@@ -214,8 +213,23 @@ export async function setShippingMethod({
       revalidateTag("cart")
     })
     .catch((error) => {
-      console.error("Error adding shipping method:", error)
-      console.error("Request body:", requestBody)
+      const requestId = Math.random().toString(36).substring(7)
+      console.error(`[Cart-${requestId}] Error adding shipping method:`, {
+        error: error.message,
+        cartId,
+        shippingMethodId,
+        data,
+        requestBody,
+        stack: error.stack,
+      })
+
+      // Log specific InPost errors
+      if (shippingMethodId?.includes("inpost") || data?.locker_id) {
+        console.error(
+          `[Cart-${requestId}] InPost specific error - Locker ID: ${data?.locker_id}`
+        )
+      }
+
       throw medusaError(error)
     })
 }

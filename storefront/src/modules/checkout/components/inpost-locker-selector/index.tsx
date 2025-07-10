@@ -1,7 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { InPostLocker, fetchInPostLockers, getCurrentLocation } from "@lib/data/inpost"
+import {
+  InPostLocker,
+  fetchInPostLockers,
+  getCurrentLocation,
+} from "@lib/data/inpost"
 
 interface InPostLockerSelectorProps {
   onLockerSelect: (locker: InPostLocker | null) => void
@@ -13,38 +17,54 @@ interface InPostLockerSelectorProps {
   }
 }
 
-export default function InPostLockerSelector({ 
-  onLockerSelect, 
+export default function InPostLockerSelector({
+  onLockerSelect,
   selectedLocker,
-  shippingAddress 
+  shippingAddress,
 }: InPostLockerSelectorProps) {
   const [lockers, setLockers] = useState<InPostLocker[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchParams, setSearchParams] = useState({
-    city: shippingAddress?.city || '',
-    postcode: shippingAddress?.postal_code || '',
-    country_code: shippingAddress?.country_code || 'PL'
+    city: shippingAddress?.city || "",
+    postcode: shippingAddress?.postal_code || "",
+    country_code: shippingAddress?.country_code || "PL",
   })
 
   const searchLockers = async (useLocation = false) => {
+    const requestId = Math.random().toString(36).substring(7)
+
+    console.log(`[InPost-Selector-${requestId}] Starting locker search`, {
+      useLocation,
+      searchParams,
+      shippingAddress,
+    })
+
     setLoading(true)
     setError(null)
-    
+
     try {
       let searchQuery: any = {
         country_code: searchParams.country_code,
-        limit: 20
+        limit: 20,
       }
 
       if (useLocation) {
+        console.log(`[InPost-Selector-${requestId}] Requesting GPS location`)
         const location = await getCurrentLocation()
         if (location) {
           searchQuery.latitude = location.latitude
           searchQuery.longitude = location.longitude
           searchQuery.radius = 5000 // 5km radius
+          console.log(`[InPost-Selector-${requestId}] Using GPS location:`, {
+            lat: location.latitude,
+            lng: location.longitude,
+          })
         } else {
-          setError('Unable to get your location. Please search by city or postal code.')
+          const locationErrorMsg =
+            "Unable to get your location. Please search by city or postal code."
+          console.warn(`[InPost-Selector-${requestId}] ${locationErrorMsg}`)
+          setError(locationErrorMsg)
           setLoading(false)
           return
         }
@@ -55,22 +75,62 @@ export default function InPostLockerSelector({
         if (searchParams.postcode) {
           searchQuery.postcode = searchParams.postcode
         }
+        console.log(`[InPost-Selector-${requestId}] Using manual search:`, {
+          city: searchParams.city,
+          postcode: searchParams.postcode,
+        })
       }
 
+      console.log(
+        `[InPost-Selector-${requestId}] Executing search with query:`,
+        searchQuery
+      )
       const response = await fetchInPostLockers(searchQuery)
-      
+
       if (response && response.lockers) {
+        console.log(`[InPost-Selector-${requestId}] Search successful:`, {
+          lockersFound: response.lockers.length,
+          total: response.total,
+        })
+
         setLockers(response.lockers)
+
         if (response.lockers.length === 0) {
-          setError('No InPost lockers found in your area. Please try a different search.')
+          const noResultsMsg =
+            "No InPost lockers found in your area. Please try a different search."
+          console.warn(`[InPost-Selector-${requestId}] ${noResultsMsg}`)
+          setError(noResultsMsg)
+        } else {
+          // Log sample lockers for debugging
+          console.log(
+            `[InPost-Selector-${requestId}] Sample lockers:`,
+            response.lockers.slice(0, 3).map((l) => ({
+              id: l.id,
+              name: l.name,
+              city: l.address.city,
+              status: l.status,
+            }))
+          )
         }
       } else {
-        setError('Failed to load InPost lockers. Please try again.')
+        const fetchErrorMsg = "Failed to load InPost lockers. Please try again."
+        console.error(`[InPost-Selector-${requestId}] ${fetchErrorMsg}`, {
+          response,
+        })
+        setError(fetchErrorMsg)
       }
-    } catch (err) {
-      setError('Failed to load InPost lockers. Please try again.')
+    } catch (err: any) {
+      const catchErrorMsg = "Failed to load InPost lockers. Please try again."
+      console.error(`[InPost-Selector-${requestId}] Error during search:`, {
+        message: err.message,
+        stack: err.stack,
+        useLocation,
+        searchParams,
+      })
+      setError(catchErrorMsg)
     } finally {
       setLoading(false)
+      console.log(`[InPost-Selector-${requestId}] Search completed`)
     }
   }
 
@@ -82,14 +142,14 @@ export default function InPostLockerSelector({
   }, [shippingAddress])
 
   const handleInputChange = (field: string, value: string) => {
-    setSearchParams(prev => ({
+    setSearchParams((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }))
   }
 
   const handleLockerSelect = (lockerId: string) => {
-    const locker = lockers.find(l => l.id === lockerId)
+    const locker = lockers.find((l) => l.id === lockerId)
     onLockerSelect(locker || null)
   }
 
@@ -97,11 +157,14 @@ export default function InPostLockerSelector({
     <div className="space-y-4">
       <div className="space-y-3">
         <h3 className="text-lg font-medium">Select InPost Locker</h3>
-        
+
         {/* Search Controls */}
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div>
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="city"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               City
             </label>
             <input
@@ -109,14 +172,17 @@ export default function InPostLockerSelector({
               id="city"
               name="city"
               value={searchParams.city}
-              onChange={(e) => handleInputChange('city', e.target.value)}
+              onChange={(e) => handleInputChange("city", e.target.value)}
               placeholder="Enter city name"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="postcode" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="postcode"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Postal Code
             </label>
             <input
@@ -124,21 +190,26 @@ export default function InPostLockerSelector({
               id="postcode"
               name="postcode"
               value={searchParams.postcode}
-              onChange={(e) => handleInputChange('postcode', e.target.value)}
+              onChange={(e) => handleInputChange("postcode", e.target.value)}
               placeholder="Enter postal code"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-          
+
           <div>
-            <label htmlFor="country_code" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="country_code"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Country
             </label>
             <select
               id="country_code"
               name="country_code"
               value={searchParams.country_code}
-              onChange={(e) => handleInputChange('country_code', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("country_code", e.target.value)
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="PL">Poland</option>
@@ -155,14 +226,14 @@ export default function InPostLockerSelector({
             disabled={loading || (!searchParams.city && !searchParams.postcode)}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Searching...' : 'Search Lockers'}
+            {loading ? "Searching..." : "Search Lockers"}
           </button>
           <button
             onClick={() => searchLockers(true)}
             disabled={loading}
             className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? 'Searching...' : 'Use My Location'}
+            {loading ? "Searching..." : "Use My Location"}
           </button>
         </div>
       </div>
@@ -179,7 +250,8 @@ export default function InPostLockerSelector({
         <div className="rounded-md bg-green-50 p-3">
           <h4 className="font-medium text-green-800">Selected Locker:</h4>
           <p className="text-sm text-green-700">
-            {selectedLocker.name} - {selectedLocker.address.line1}, {selectedLocker.address.city}
+            {selectedLocker.name} - {selectedLocker.address.line1},{" "}
+            {selectedLocker.address.city}
           </p>
         </div>
       )}
@@ -194,8 +266,8 @@ export default function InPostLockerSelector({
                 key={locker.id}
                 className={`cursor-pointer rounded-lg border p-3 transition-colors hover:bg-gray-50 ${
                   selectedLocker?.id === locker.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200'
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200"
                 }`}
                 onClick={() => handleLockerSelect(locker.id)}
               >
@@ -247,4 +319,4 @@ export default function InPostLockerSelector({
       )}
     </div>
   )
-} 
+}

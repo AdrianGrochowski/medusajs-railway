@@ -26,7 +26,9 @@ const Shipping: React.FC<ShippingProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(null)
+  const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(
+    null
+  )
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -40,8 +42,9 @@ const Shipping: React.FC<ShippingProps> = ({
   )
 
   // Check if the selected shipping method is InPost Locker
-  const isInPostLocker = selectedShippingMethod?.name?.toLowerCase().includes('inpost locker') || 
-                         selectedShippingMethod?.name?.toLowerCase().includes('inpost parcel locker')
+  const isInPostLocker =
+    selectedShippingMethod?.name?.toLowerCase().includes("inpost locker") ||
+    selectedShippingMethod?.name?.toLowerCase().includes("inpost parcel locker")
 
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
@@ -50,21 +53,38 @@ const Shipping: React.FC<ShippingProps> = ({
   const handleSubmit = () => {
     // Validate InPost locker selection
     if (isInPostLocker && !selectedLocker) {
-      setError('Please select an InPost locker before continuing.')
+      setError("Please select an InPost locker before continuing.")
       return
     }
     router.push(pathname + "?step=payment", { scroll: false })
   }
 
   const set = async (id: string) => {
+    const requestId = Math.random().toString(36).substring(7)
+
+    console.log(`[Shipping-${requestId}] Setting shipping method:`, {
+      methodId: id,
+      cartId: cart.id,
+      selectedLocker: selectedLocker?.id || null,
+    })
+
     setIsLoading(true)
     setError(null)
-    
+
     // Check if this is an InPost locker method
-    const selectedMethod = availableShippingMethods?.find(method => method.id === id)
-    const isInPostMethod = selectedMethod?.name?.toLowerCase().includes('inpost locker') || 
-                          selectedMethod?.name?.toLowerCase().includes('inpost parcel locker')
-    
+    const selectedMethod = availableShippingMethods?.find(
+      (method) => method.id === id
+    )
+    const isInPostMethod =
+      selectedMethod?.name?.toLowerCase().includes("inpost locker") ||
+      selectedMethod?.name?.toLowerCase().includes("inpost parcel locker")
+
+    console.log(`[Shipping-${requestId}] Method analysis:`, {
+      methodName: selectedMethod?.name,
+      isInPostMethod,
+      hasSelectedLocker: !!selectedLocker,
+    })
+
     try {
       // Prepare additional data if InPost locker method is selected
       let additionalData = undefined
@@ -72,16 +92,34 @@ const Shipping: React.FC<ShippingProps> = ({
         additionalData = {
           locker_id: selectedLocker.id,
           locker_name: selectedLocker.name,
-          locker_address: selectedLocker.address
+          locker_address: selectedLocker.address,
         }
+        console.log(
+          `[Shipping-${requestId}] Using InPost locker data:`,
+          additionalData
+        )
+      } else if (isInPostMethod && !selectedLocker) {
+        console.warn(
+          `[Shipping-${requestId}] InPost method selected but no locker chosen`
+        )
       }
-      
+
+      console.log(`[Shipping-${requestId}] Calling setShippingMethod...`)
       await setShippingMethod({
         cartId: cart.id,
         shippingMethodId: id,
-        data: additionalData
+        data: additionalData,
       })
+
+      console.log(`[Shipping-${requestId}] Shipping method set successfully`)
     } catch (err: any) {
+      console.error(`[Shipping-${requestId}] Error setting shipping method:`, {
+        error: err.message,
+        stack: err.stack,
+        methodId: id,
+        isInPostMethod,
+        hasLocker: !!selectedLocker,
+      })
       setError(err.message)
     } finally {
       setIsLoading(false)
@@ -179,11 +217,17 @@ const Shipping: React.FC<ShippingProps> = ({
               <InPostLockerSelector
                 onLockerSelect={handleLockerSelect}
                 selectedLocker={selectedLocker}
-                shippingAddress={cart.shipping_address ? {
-                  city: cart.shipping_address.city || undefined,
-                  postal_code: cart.shipping_address.postal_code || undefined,
-                  country_code: cart.shipping_address.country_code || undefined,
-                } : undefined}
+                shippingAddress={
+                  cart.shipping_address
+                    ? {
+                        city: cart.shipping_address.city || undefined,
+                        postal_code:
+                          cart.shipping_address.postal_code || undefined,
+                        country_code:
+                          cart.shipping_address.country_code || undefined,
+                      }
+                    : undefined
+                }
               />
             </div>
           )}
@@ -198,7 +242,9 @@ const Shipping: React.FC<ShippingProps> = ({
             className="mt-6"
             onClick={handleSubmit}
             isLoading={isLoading}
-            disabled={!cart.shipping_methods?.[0] || (isInPostLocker && !selectedLocker)}
+            disabled={
+              !cart.shipping_methods?.[0] || (isInPostLocker && !selectedLocker)
+            }
             data-testid="submit-delivery-option-button"
           >
             Continue to payment
@@ -222,7 +268,8 @@ const Shipping: React.FC<ShippingProps> = ({
                 {/* Show selected locker info */}
                 {isInPostLocker && selectedLocker && (
                   <Text className="txt-small text-ui-fg-subtle mt-1">
-                    Locker: {selectedLocker.name} - {selectedLocker.address.city}
+                    Locker: {selectedLocker.name} -{" "}
+                    {selectedLocker.address.city}
                   </Text>
                 )}
               </div>
