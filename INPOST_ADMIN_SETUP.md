@@ -114,6 +114,19 @@ After creating both options, you should see:
    - **InPost Locker** ← Should now work!
    - **InPost Courier**
 
+**⚠️ IMPORTANT - InPost Locker Workflow:**
+
+1. **First**: Search and select a locker (use the search form)
+2. **Then**: Select "InPost Locker" shipping method
+3. **If you select InPost Locker without choosing a locker first**, you'll see an error message
+
+**Correct Order:**
+
+1. Select "InPost Locker" → Locker selector appears
+2. Search for lockers by city/postal code or GPS
+3. Choose a locker from the list
+4. Continue to payment
+
 ## 🔧 **Troubleshooting Admin Issues**
 
 ### **Issue: InPost Provider Not Available**
