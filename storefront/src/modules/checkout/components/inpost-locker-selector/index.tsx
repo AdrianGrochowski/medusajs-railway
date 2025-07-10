@@ -25,10 +25,24 @@ export default function InPostLockerSelector({
   const [lockers, setLockers] = useState<InPostLocker[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Smart country detection for InPost - default to Poland since InPost primarily operates there
+  const getInPostCountryCode = () => {
+    // If shipping address has a country code that InPost supports, use it
+    const supportedCountries = ["PL", "GB", "IT"]
+    if (
+      shippingAddress?.country_code &&
+      supportedCountries.includes(shippingAddress.country_code.toUpperCase())
+    ) {
+      return shippingAddress.country_code.toUpperCase()
+    }
+    // Default to Poland since InPost is primarily Polish
+    return "PL"
+  }
+
   const [searchParams, setSearchParams] = useState({
     city: shippingAddress?.city || "",
     postcode: shippingAddress?.postal_code || "",
-    country_code: shippingAddress?.country_code || "PL",
+    country_code: getInPostCountryCode(),
   })
 
   const searchLockers = async (useLocation = false) => {

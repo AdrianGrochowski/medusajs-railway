@@ -92,19 +92,7 @@ export async function fetchInPostLockers(params: {
     if (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY) {
       headers["x-publishable-api-key"] =
         process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY
-      console.log(
-        `[InPost-Frontend-${requestId}] Using publishable key: ${process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY.substring(
-          0,
-          20
-        )}...`
-      )
-    } else {
-      console.error(
-        `[InPost-Frontend-${requestId}] No publishable API key found in environment`
-      )
     }
-
-    console.log(`[InPost-Frontend-${requestId}] Request headers:`, headers)
 
     const response = await fetch(url, {
       method: "GET",
