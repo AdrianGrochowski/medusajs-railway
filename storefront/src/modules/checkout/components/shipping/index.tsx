@@ -29,6 +29,9 @@ const Shipping: React.FC<ShippingProps> = ({
   const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(
     null
   )
+  const [pendingShippingMethodId, setPendingShippingMethodId] = useState<
+    string | null
+  >(null)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -46,11 +49,28 @@ const Shipping: React.FC<ShippingProps> = ({
     selectedShippingMethod?.name?.toLowerCase().includes("inpost") ||
     selectedShippingMethod?.provider_id?.includes("inpost")
 
+  // Check if pending method (user clicked but not confirmed) is InPost
+  const pendingMethod = availableShippingMethods?.find(
+    (method) => method.id === pendingShippingMethodId
+  )
+  const isPendingInPost =
+    pendingMethod?.name?.toLowerCase().includes("inpost") ||
+    pendingMethod?.provider_id?.includes("inpost")
+
+  // Show locker selector if either selected or pending method is InPost
+  const shouldShowLockerSelector = isInPostLocker || isPendingInPost
+
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
   }
 
   const handleSubmit = () => {
+    // Check if there's a pending InPost selection
+    if (pendingShippingMethodId) {
+      setError("Please confirm your InPost locker selection first.")
+      return
+    }
+
     // Validate InPost locker selection
     if (isInPostLocker && !selectedLocker) {
       setError("Please select an InPost locker before continuing.")
@@ -186,7 +206,25 @@ const Shipping: React.FC<ShippingProps> = ({
       {isOpen ? (
         <div data-testid="delivery-options-container">
           <div className="pb-8">
-            <RadioGroup value={selectedShippingMethod?.id} onChange={set}>
+            <RadioGroup
+              value={selectedShippingMethod?.id}
+              onChange={(id: string) => {
+                setPendingShippingMethodId(id)
+                // Check if this is InPost method
+                const method = availableShippingMethods?.find(
+                  (m) => m.id === id
+                )
+                const isInPost =
+                  method?.name?.toLowerCase().includes("inpost") ||
+                  method?.provider_id?.includes("inpost")
+
+                // If not InPost, immediately set the shipping method
+                if (!isInPost) {
+                  set(id)
+                  setPendingShippingMethodId(null)
+                }
+              }}
+            >
               {availableShippingMethods?.map((option) => {
                 return (
                   <RadioGroup.Option
@@ -220,7 +258,7 @@ const Shipping: React.FC<ShippingProps> = ({
           </div>
 
           {/* InPost Locker Selector */}
-          {isInPostLocker && (
+          {shouldShowLockerSelector && (
             <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
               <InPostLockerSelector
                 onLockerSelect={handleLockerSelect}
@@ -237,6 +275,22 @@ const Shipping: React.FC<ShippingProps> = ({
                     : undefined
                 }
               />
+
+              {/* Confirm InPost Selection Button */}
+              {pendingShippingMethodId && selectedLocker && (
+                <div className="mt-4">
+                  <Button
+                    onClick={() => {
+                      set(pendingShippingMethodId)
+                      setPendingShippingMethodId(null)
+                    }}
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    Confirm InPost Locker Selection
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
@@ -251,7 +305,9 @@ const Shipping: React.FC<ShippingProps> = ({
             onClick={handleSubmit}
             isLoading={isLoading}
             disabled={
-              !cart.shipping_methods?.[0] || (isInPostLocker && !selectedLocker)
+              !cart.shipping_methods?.[0] ||
+              (isInPostLocker && !selectedLocker) ||
+              pendingShippingMethodId !== null
             }
             data-testid="submit-delivery-option-button"
           >
