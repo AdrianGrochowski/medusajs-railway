@@ -66,18 +66,21 @@ const Shipping: React.FC<ShippingProps> = ({
                           selectedMethod?.name?.toLowerCase().includes('inpost parcel locker')
     
     try {
-      const shippingData: any = { cartId: cart.id, shippingMethodId: id }
-      
-      // Add locker data if InPost locker method is selected
+      // Prepare additional data if InPost locker method is selected
+      let additionalData = undefined
       if (isInPostMethod && selectedLocker) {
-        shippingData.data = {
+        additionalData = {
           locker_id: selectedLocker.id,
           locker_name: selectedLocker.name,
           locker_address: selectedLocker.address
         }
       }
       
-      await setShippingMethod(shippingData)
+      await setShippingMethod({
+        cartId: cart.id,
+        shippingMethodId: id,
+        data: additionalData
+      })
     } catch (err: any) {
       setError(err.message)
     } finally {

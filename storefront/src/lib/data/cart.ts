@@ -195,14 +195,23 @@ export async function enrichLineItems(
 export async function setShippingMethod({
   cartId,
   shippingMethodId,
+  data,
 }: {
   cartId: string
   shippingMethodId: string
+  data?: any
 }) {
+  const requestBody: any = { option_id: shippingMethodId }
+  
+  // Add additional data if provided (e.g., for InPost locker selection)
+  if (data) {
+    requestBody.data = data
+  }
+
   return sdk.store.cart
     .addShippingMethod(
       cartId,
-      { option_id: shippingMethodId },
+      requestBody,
       {},
       getAuthHeaders()
     )
