@@ -41,10 +41,10 @@ const Shipping: React.FC<ShippingProps> = ({
     (method) => method.id === cart.shipping_methods?.at(-1)?.shipping_option_id
   )
 
-  // Check if the selected shipping method is InPost Locker
+  // Check if the selected shipping method is InPost
   const isInPostLocker =
-    selectedShippingMethod?.name?.toLowerCase().includes("inpost locker") ||
-    selectedShippingMethod?.name?.toLowerCase().includes("inpost parcel locker")
+    selectedShippingMethod?.name?.toLowerCase().includes("inpost") ||
+    selectedShippingMethod?.provider_id?.includes("inpost")
 
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
@@ -76,8 +76,8 @@ const Shipping: React.FC<ShippingProps> = ({
       (method) => method.id === id
     )
     const isInPostMethod =
-      selectedMethod?.name?.toLowerCase().includes("inpost locker") ||
-      selectedMethod?.name?.toLowerCase().includes("inpost parcel locker")
+      selectedMethod?.name?.toLowerCase().includes("inpost") ||
+      selectedMethod?.provider_id?.includes("inpost")
 
     console.log(`[Shipping-${requestId}] Method analysis:`, {
       methodName: selectedMethod?.name,
