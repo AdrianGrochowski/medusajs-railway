@@ -154,34 +154,78 @@ class InPostFulfillmentProviderService extends MedusaService({}) {
   }
 
   async validateFulfillmentData(optionData: any, data: any, cart: any) {
-    if (optionData.id === "inpost-locker") {
-      if (!data.locker_id) {
-        throw new MedusaError(
-          MedusaError.Types.INVALID_DATA,
-          "Locker ID is required for InPost locker delivery"
-        );
+    try {
+      this.logger_.info(
+        `Validating fulfillment data for option: ${optionData?.id || "unknown"}`
+      );
+
+      if (optionData?.id === "inpost-locker") {
+        if (!data?.locker_id) {
+          this.logger_.warn("Locker ID is missing for InPost locker delivery");
+          throw new MedusaError(
+            MedusaError.Types.INVALID_DATA,
+            "Locker ID is required for InPost locker delivery"
+          );
+        }
       }
+      return data || {};
+    } catch (error) {
+      this.logger_.error(`Error validating fulfillment data: ${error.message}`);
+      throw error;
     }
-    return data;
   }
 
   async validateOption(data: any) {
-    return true;
+    try {
+      this.logger_.info("Validating InPost option");
+      return true;
+    } catch (error) {
+      this.logger_.error(`Error validating option: ${error.message}`);
+      return false;
+    }
   }
 
   async canCalculate(data: any) {
-    return true;
+    try {
+      this.logger_.info("Checking if InPost can calculate pricing");
+      return true;
+    } catch (error) {
+      this.logger_.error(`Error checking canCalculate: ${error.message}`);
+      return false;
+    }
   }
 
   async calculatePrice(optionData: any, data: any, cart: any) {
-    // Return prices in cents
-    switch (optionData.id) {
-      case "inpost-locker":
+    try {
+      this.logger_.info(
+        `Calculating price for InPost option: ${optionData?.id || "unknown"}`
+      );
+
+      // Handle different option identification methods
+      const optionId =
+        optionData?.id || optionData?.code || optionData?.name?.toLowerCase();
+
+      // Return prices in cents
+      if (optionId?.includes("locker") || optionId === "inpost-locker") {
+        this.logger_.info("Calculated InPost Locker price: 999 cents");
         return 999; // 9.99 EUR
-      case "inpost-courier":
+      }
+
+      if (optionId?.includes("courier") || optionId === "inpost-courier") {
+        this.logger_.info("Calculated InPost Courier price: 1999 cents");
         return 1999; // 19.99 EUR
-      default:
-        return 0;
+      }
+
+      this.logger_.warn(
+        `Unknown InPost option: ${optionId}, returning default price`
+      );
+      return 999; // Default fallback price
+    } catch (error) {
+      this.logger_.error(`Error calculating InPost price: ${error.message}`);
+      throw new MedusaError(
+        MedusaError.Types.UNEXPECTED_STATE,
+        `Failed to calculate InPost shipping price: ${error.message}`
+      );
     }
   }
 
