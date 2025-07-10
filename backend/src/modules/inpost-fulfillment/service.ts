@@ -155,21 +155,42 @@ class InPostFulfillmentProviderService extends MedusaService({}) {
 
   async validateFulfillmentData(optionData: any, data: any, cart: any) {
     try {
+      const requestId = Math.random().toString(36).substring(7);
       this.logger_.info(
-        `Validating fulfillment data for option: ${optionData?.id || "unknown"}`
+        `[InPost-${requestId}] Validating fulfillment data for option: ${
+          optionData?.id || "unknown"
+        }`
+      );
+      this.logger_.info(
+        `[InPost-${requestId}] Data received: ${JSON.stringify(data)}`
       );
 
-      if (optionData?.id === "inpost-locker") {
+      // Check if this is an InPost locker option that requires locker selection
+      const isLockerOption =
+        optionData?.id === "inpost-locker" ||
+        optionData?.name?.toLowerCase().includes("locker");
+
+      if (isLockerOption) {
         if (!data?.locker_id) {
-          this.logger_.warn("Locker ID is missing for InPost locker delivery");
+          this.logger_.warn(
+            `[InPost-${requestId}] Locker ID is missing for InPost locker delivery`
+          );
           throw new MedusaError(
             MedusaError.Types.INVALID_DATA,
-            "Locker ID is required for InPost locker delivery"
+            "Please select an InPost locker before proceeding with this shipping method."
           );
         }
+        this.logger_.info(
+          `[InPost-${requestId}] Locker validation passed: ${data.locker_id}`
+        );
+      } else {
+        this.logger_.info(
+          `[InPost-${requestId}] Non-locker InPost option, no locker validation required`
+        );
       }
+
       return data || {};
-    } catch (error) {
+    } catch (error: any) {
       this.logger_.error(`Error validating fulfillment data: ${error.message}`);
       throw error;
     }

@@ -86,6 +86,18 @@ const Shipping: React.FC<ShippingProps> = ({
     })
 
     try {
+      // Validate InPost locker selection before attempting to set shipping method
+      if (isInPostMethod && !selectedLocker) {
+        console.warn(
+          `[Shipping-${requestId}] InPost method selected but no locker chosen`
+        )
+        setError(
+          "Please select an InPost locker before choosing this shipping method."
+        )
+        setIsLoading(false)
+        return
+      }
+
       // Prepare additional data if InPost locker method is selected
       let additionalData = undefined
       if (isInPostMethod && selectedLocker) {
@@ -97,10 +109,6 @@ const Shipping: React.FC<ShippingProps> = ({
         console.log(
           `[Shipping-${requestId}] Using InPost locker data:`,
           additionalData
-        )
-      } else if (isInPostMethod && !selectedLocker) {
-        console.warn(
-          `[Shipping-${requestId}] InPost method selected but no locker chosen`
         )
       }
 
