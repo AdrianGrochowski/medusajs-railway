@@ -202,23 +202,22 @@ export async function setShippingMethod({
   data?: any
 }) {
   const requestBody: any = { option_id: shippingMethodId }
-  
+
   // Add additional data if provided (e.g., for InPost locker selection)
   if (data) {
     requestBody.data = data
   }
 
   return sdk.store.cart
-    .addShippingMethod(
-      cartId,
-      requestBody,
-      {},
-      getAuthHeaders()
-    )
+    .addShippingMethod(cartId, requestBody, {}, getAuthHeaders())
     .then(() => {
       revalidateTag("cart")
     })
-    .catch(medusaError)
+    .catch((error) => {
+      console.error("Error adding shipping method:", error)
+      console.error("Request body:", requestBody)
+      throw medusaError(error)
+    })
 }
 
 export async function initiatePaymentSession(
