@@ -214,7 +214,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const shippingOptions = [
     {
       name: "Standard Shipping",
-      price_type: "flat",
+      price_type: "flat" as const,
       provider_id: "manual_manual",
       service_zone_id: fulfillmentSet.service_zones[0].id,
       shipping_profile_id: shippingProfile.id,
@@ -241,18 +241,18 @@ export default async function seedDemoData({ container }: ExecArgs) {
         {
           attribute: "enabled_in_store",
           value: "true",
-          operator: "eq",
+          operator: "eq" as any,
         },
         {
           attribute: "is_return",
           value: "false",
-          operator: "eq",
+          operator: "eq" as any,
         },
       ],
     },
     {
       name: "Express Shipping",
-      price_type: "flat",
+      price_type: "flat" as const,
       provider_id: "manual_manual",
       service_zone_id: fulfillmentSet.service_zones[0].id,
       shipping_profile_id: shippingProfile.id,
@@ -279,12 +279,12 @@ export default async function seedDemoData({ container }: ExecArgs) {
         {
           attribute: "enabled_in_store",
           value: "true",
-          operator: "eq",
+          operator: "eq" as any,
         },
         {
           attribute: "is_return",
           value: "false",
-          operator: "eq",
+          operator: "eq" as any,
         },
       ],
     },
@@ -295,7 +295,7 @@ export default async function seedDemoData({ container }: ExecArgs) {
     shippingOptions.push(
       {
         name: "InPost Locker",
-        price_type: "calculated",
+        price_type: "flat" as const,
         provider_id: "inpost_inpost",
         service_zone_id: fulfillmentSet.service_zones[0].id,
         shipping_profile_id: shippingProfile.id,
@@ -318,18 +318,18 @@ export default async function seedDemoData({ container }: ExecArgs) {
           {
             attribute: "enabled_in_store",
             value: "true",
-            operator: "eq",
+            operator: "eq" as any,
           },
           {
             attribute: "is_return",
             value: "false",
-            operator: "eq",
+            operator: "eq" as any,
           },
         ],
       },
       {
         name: "InPost Courier",
-        price_type: "calculated",
+        price_type: "flat" as const,
         provider_id: "inpost_inpost",
         service_zone_id: fulfillmentSet.service_zones[0].id,
         shipping_profile_id: shippingProfile.id,
@@ -352,12 +352,12 @@ export default async function seedDemoData({ container }: ExecArgs) {
           {
             attribute: "enabled_in_store",
             value: "true",
-            operator: "eq",
+            operator: "eq" as any,
           },
           {
             attribute: "is_return",
             value: "false",
-            operator: "eq",
+            operator: "eq" as any,
           },
         ],
       }
