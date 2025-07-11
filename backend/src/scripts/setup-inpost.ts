@@ -94,7 +94,7 @@ export default async function setupInPostIntegration({ container }: ExecArgs) {
     await link.create({
       [Modules.FULFILLMENT]: {
         fulfillment_set_id: fulfillmentSet.id,
-        fulfillment_provider_id: "inpost-fulfillment_inpost-fulfillment",
+        fulfillment_provider_id: "inpost-fulfillment",
       },
     });
     logger.info("Linked InPost provider to fulfillment set");
@@ -117,7 +117,7 @@ export default async function setupInPostIntegration({ container }: ExecArgs) {
         {
           name: "Paczkomaty InPost",
           price_type: "calculated",
-          provider_id: "inpost-fulfillment_inpost-fulfillment",
+          provider_id: "inpost-fulfillment",
           service_zone_id: fulfillmentSet.service_zones[0].id,
           shipping_profile_id: shippingProfile.id,
           type: {
