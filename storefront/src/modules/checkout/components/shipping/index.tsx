@@ -10,7 +10,7 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import InPostLockerSelector from "@modules/checkout/components/inpost-locker-selector"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { setShippingMethod, setInPostLocker } from "@lib/data/cart"
+import { setShippingMethod } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 
@@ -39,7 +39,9 @@ const Shipping: React.FC<ShippingProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(null)
+  const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(
+    null
+  )
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -53,8 +55,9 @@ const Shipping: React.FC<ShippingProps> = ({
   )
 
   // Check if InPost is selected
-  const isInPostSelected = selectedShippingMethod?.name?.toLowerCase().includes("inpost") || 
-                          selectedShippingMethod?.name?.toLowerCase().includes("paczkomaty")
+  const isInPostSelected =
+    selectedShippingMethod?.name?.toLowerCase().includes("inpost") ||
+    selectedShippingMethod?.name?.toLowerCase().includes("paczkomaty")
 
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
@@ -67,35 +70,43 @@ const Shipping: React.FC<ShippingProps> = ({
       return
     }
 
-    // Save InPost locker data if selected
-    if (isInPostSelected && selectedLocker) {
-      try {
-        await setInPostLocker({
-          cartId: cart.id,
-          lockerData: {
-            target_point: selectedLocker.name,
-            point_name: selectedLocker.name,
-            point_address: selectedLocker.address,
-          },
-        })
-      } catch (err: any) {
-        setError("Failed to save locker selection: " + err.message)
-        return
-      }
-    }
-
     router.push(pathname + "?step=payment", { scroll: false })
   }
 
   const set = async (id: string) => {
     setIsLoading(true)
     setError(null)
-    
+
     try {
-      await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
-      
-      // Reset locker selection when changing shipping method
-      setSelectedLocker(null)
+      // Check if this is an InPost shipping method
+      const selectedOption = availableShippingMethods?.find(
+        (option) => option.id === id
+      )
+      const isInPostOption =
+        selectedOption?.name?.toLowerCase().includes("inpost") ||
+        selectedOption?.name?.toLowerCase().includes("paczkomaty")
+
+      let shippingData: any = undefined
+
+      // If InPost is selected and we have a locker, pass the locker data
+      if (isInPostOption && selectedLocker) {
+        shippingData = {
+          target_point: selectedLocker.name,
+          point_name: selectedLocker.name,
+          point_address: selectedLocker.address,
+        }
+      }
+
+      await setShippingMethod({
+        cartId: cart.id,
+        shippingMethodId: id,
+        data: shippingData,
+      })
+
+      // Reset locker selection when changing shipping method to non-InPost
+      if (!isInPostOption) {
+        setSelectedLocker(null)
+      }
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -113,8 +124,9 @@ const Shipping: React.FC<ShippingProps> = ({
   }, [isOpen])
 
   // Check if user can continue (has shipping method and locker if InPost)
-  const canContinue = cart.shipping_methods?.length > 0 && 
-                     (!isInPostSelected || selectedLocker)
+  const canContinue =
+    (cart.shipping_methods?.length ?? 0) > 0 &&
+    (!isInPostSelected || selectedLocker)
 
   return (
     <div className="bg-white">
@@ -193,23 +205,25 @@ const Shipping: React.FC<ShippingProps> = ({
                   Select InPost Locker
                 </Text>
                 <Text className="text-blue-600 text-sm">
-                  Please choose a Paczkomat where you'd like to collect your package.
+                  Please choose a Paczkomat where you&apos;d like to collect
+                  your package.
                 </Text>
               </div>
-              
+
               <InPostLockerSelector
                 cart={cart}
                 onLockerSelect={handleLockerSelect}
                 selectedLocker={selectedLocker}
               />
-              
+
               {selectedLocker && (
                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                   <Text className="text-green-800 font-medium">
                     Selected Locker: {selectedLocker.name}
                   </Text>
                   <Text className="text-green-600 text-sm">
-                    {selectedLocker.address.line1}, {selectedLocker.address.city}
+                    {selectedLocker.address.line1},{" "}
+                    {selectedLocker.address.city}
                   </Text>
                 </div>
               )}

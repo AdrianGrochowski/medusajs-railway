@@ -195,17 +195,21 @@ export async function enrichLineItems(
 export async function setShippingMethod({
   cartId,
   shippingMethodId,
+  data,
 }: {
   cartId: string
   shippingMethodId: string
+  data?: Record<string, any>
 }) {
+  const payload: any = { option_id: shippingMethodId }
+
+  // If data is provided (e.g., InPost locker data), include it
+  if (data) {
+    payload.data = data
+  }
+
   return sdk.store.cart
-    .addShippingMethod(
-      cartId,
-      { option_id: shippingMethodId },
-      {},
-      getAuthHeaders()
-    )
+    .addShippingMethod(cartId, payload, {}, getAuthHeaders())
     .then(() => {
       revalidateTag("cart")
     })
@@ -396,28 +400,3 @@ export async function updateRegion(countryCode: string, currentPath: string) {
 
   redirect(`/${countryCode}${currentPath}`)
 }
-
-// Save InPost locker data to cart metadata
-export async function setInPostLocker({
-  cartId,
-  lockerData,
-}: {
-  cartId: string
-  lockerData: {
-    target_point: string
-    point_name: string
-    point_address: any
-  }
-}) {
-  return updateCart({
-    metadata: {
-      inpost_locker: JSON.stringify(lockerData),
-      target_point: lockerData.target_point,
-    },
-  })
-    .then(() => {
-      revalidateTag("cart")
-    })
-    .catch(medusaError)
-}
-
