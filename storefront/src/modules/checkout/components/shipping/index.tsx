@@ -7,9 +7,10 @@ import { Button, Heading, Text, clx } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import Radio from "@modules/common/components/radio"
 import ErrorMessage from "@modules/checkout/components/error-message"
+import InPostLockerSelector from "@modules/checkout/components/inpost-locker-selector"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { setShippingMethod } from "@lib/data/cart"
+import { setShippingMethod, setInPostLocker } from "@lib/data/cart"
 import { convertToLocale } from "@lib/util/money"
 import { HttpTypes } from "@medusajs/types"
 
@@ -18,12 +19,27 @@ type ShippingProps = {
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
 }
 
+interface InPostLocker {
+  name: string
+  address: {
+    line1: string
+    line2?: string
+    city: string
+    postal_code: string
+    country_code: string
+  }
+  coordinates: [number, number]
+  status: string
+  description?: string
+}
+
 const Shipping: React.FC<ShippingProps> = ({
   cart,
   availableShippingMethods,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedLocker, setSelectedLocker] = useState<InPostLocker | null>(null)
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -36,28 +52,69 @@ const Shipping: React.FC<ShippingProps> = ({
     (method) => method.id === cart.shipping_methods?.at(-1)?.shipping_option_id
   )
 
+  // Check if InPost is selected
+  const isInPostSelected = selectedShippingMethod?.name?.toLowerCase().includes("inpost") || 
+                          selectedShippingMethod?.name?.toLowerCase().includes("paczkomaty")
+
   const handleEdit = () => {
     router.push(pathname + "?step=delivery", { scroll: false })
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    // If InPost is selected, ensure a locker is chosen
+    if (isInPostSelected && !selectedLocker) {
+      setError("Please select an InPost locker to continue")
+      return
+    }
+
+    // Save InPost locker data if selected
+    if (isInPostSelected && selectedLocker) {
+      try {
+        await setInPostLocker({
+          cartId: cart.id,
+          lockerData: {
+            target_point: selectedLocker.name,
+            point_name: selectedLocker.name,
+            point_address: selectedLocker.address,
+          },
+        })
+      } catch (err: any) {
+        setError("Failed to save locker selection: " + err.message)
+        return
+      }
+    }
+
     router.push(pathname + "?step=payment", { scroll: false })
   }
 
   const set = async (id: string) => {
     setIsLoading(true)
-    await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
-      .catch((err) => {
-        setError(err.message)
-      })
-      .finally(() => {
-        setIsLoading(false)
-      })
+    setError(null)
+    
+    try {
+      await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
+      
+      // Reset locker selection when changing shipping method
+      setSelectedLocker(null)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLockerSelect = (locker: InPostLocker) => {
+    setSelectedLocker(locker)
+    setError(null) // Clear any previous errors
   }
 
   useEffect(() => {
     setError(null)
   }, [isOpen])
+
+  // Check if user can continue (has shipping method and locker if InPost)
+  const canContinue = cart.shipping_methods?.length > 0 && 
+                     (!isInPostSelected || selectedLocker)
 
   return (
     <div className="bg-white">
@@ -128,6 +185,37 @@ const Shipping: React.FC<ShippingProps> = ({
             </RadioGroup>
           </div>
 
+          {/* InPost Locker Selector */}
+          {isInPostSelected && (
+            <div className="mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <Text className="text-blue-800 font-medium mb-2">
+                  Select InPost Locker
+                </Text>
+                <Text className="text-blue-600 text-sm">
+                  Please choose a Paczkomat where you'd like to collect your package.
+                </Text>
+              </div>
+              
+              <InPostLockerSelector
+                cart={cart}
+                onLockerSelect={handleLockerSelect}
+                selectedLocker={selectedLocker}
+              />
+              
+              {selectedLocker && (
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <Text className="text-green-800 font-medium">
+                    Selected Locker: {selectedLocker.name}
+                  </Text>
+                  <Text className="text-green-600 text-sm">
+                    {selectedLocker.address.line1}, {selectedLocker.address.city}
+                  </Text>
+                </div>
+              )}
+            </div>
+          )}
+
           <ErrorMessage
             error={error}
             data-testid="delivery-option-error-message"
@@ -138,7 +226,7 @@ const Shipping: React.FC<ShippingProps> = ({
             className="mt-6"
             onClick={handleSubmit}
             isLoading={isLoading}
-            disabled={!cart.shipping_methods?.[0]}
+            disabled={!canContinue}
             data-testid="submit-delivery-option-button"
           >
             Continue to payment
@@ -159,6 +247,11 @@ const Shipping: React.FC<ShippingProps> = ({
                     currency_code: cart?.currency_code,
                   })}
                 </Text>
+                {isInPostSelected && selectedLocker && (
+                  <Text className="txt-small text-ui-fg-subtle mt-1">
+                    Locker: {selectedLocker.name}
+                  </Text>
+                )}
               </div>
             )}
           </div>

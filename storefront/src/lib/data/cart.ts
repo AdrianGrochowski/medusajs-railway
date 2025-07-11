@@ -396,3 +396,28 @@ export async function updateRegion(countryCode: string, currentPath: string) {
 
   redirect(`/${countryCode}${currentPath}`)
 }
+
+// Save InPost locker data to cart metadata
+export async function setInPostLocker({
+  cartId,
+  lockerData,
+}: {
+  cartId: string
+  lockerData: {
+    target_point: string
+    point_name: string
+    point_address: any
+  }
+}) {
+  return updateCart({
+    metadata: {
+      inpost_locker: JSON.stringify(lockerData),
+      target_point: lockerData.target_point,
+    },
+  })
+    .then(() => {
+      revalidateTag("cart")
+    })
+    .catch(medusaError)
+}
+
