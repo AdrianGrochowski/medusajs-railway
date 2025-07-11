@@ -56,6 +56,9 @@ importers:
       awilix:
         specifier: ^8.0.1
         version: 8.0.1
+      axios:
+        specifier: ^1.7.7
+        version: 1.9.0
       medusajs-launch-utils:
         specifier: ^0.0.16
         version: 0.0.16
